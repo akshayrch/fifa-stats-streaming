@@ -1,0 +1,48 @@
+{
+  "get": "standings",
+  "parameters": {"league": "39", "season": "2025"},
+  "errors": [],
+  "results": 1,
+  "response": [
+    {
+      "league": {
+        "id": 39,
+        "name": "Premier League",
+        "country": "England",
+        "season": 2025,
+        "standings": [
+          [
+            {
+              "rank": 1,
+              "team": {"id": 50, "name": "Manchester City"},
+              "points": 88,
+              "goalsDiff": 55,
+              "all": {"played": 38, "win": 28, "draw": 4, "lose": 6, "goals": {"for": 92, "against": 37}}
+            },
+            {
+              "rank": 2,
+              "team": {"id": 40, "name": "Liverpool"},
+              "points": 84,
+              "goalsDiff": 48,
+              "all": {"played": 38, "win": 26, "draw": 6, "lose": 6, "goals": {"for": 88, "against": 40}}
+            },
+            {
+              "rank": 3,
+              "team": {"id": 42, "name": "Arsenal"},
+              "points": 80,
+              "goalsDiff": 40,
+              "all": {"played": 38, "win": 24, "draw": 8, "lose": 6, "goals": {"for": 80, "against": 40}}
+            },
+            {
+              "rank": 4,
+              "team": {"id": 33, "name": "Manchester United"},
+              "points": 68,
+              "goalsDiff": 18,
+              "all": {"played": 38, "win": 20, "draw": 8, "lose": 10, "goals": {"for": 65, "against": 47}}
+            }
+          ]
+        ]
+      }
+    }
+  ]
+}
