@@ -1,0 +1,26 @@
+{
+  "get": "fixtures/events",
+  "parameters": {"fixture": "1003"},
+  "errors": [],
+  "results": 2,
+  "response": [
+    {
+      "time": {"elapsed": 23, "extra": null},
+      "team": {"id": 49, "name": "Chelsea"},
+      "player": {"id": 5001, "name": "C. Palmer"},
+      "assist": {"id": 5002, "name": "N. Madueke"},
+      "type": "Goal",
+      "detail": "Normal Goal",
+      "comments": null
+    },
+    {
+      "time": {"elapsed": 58, "extra": null},
+      "team": {"id": 47, "name": "Tottenham"},
+      "player": {"id": 6001, "name": "S. Son"},
+      "assist": {"id": null, "name": null},
+      "type": "Goal",
+      "detail": "Penalty",
+      "comments": null
+    }
+  ]
+}

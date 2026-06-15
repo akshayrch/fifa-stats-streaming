@@ -1,0 +1,26 @@
+{
+  "get": "fixtures/lineups",
+  "parameters": {"fixture": "1001"},
+  "errors": [],
+  "results": 2,
+  "response": [
+    {
+      "team": {"id": 33, "name": "Manchester United"},
+      "formation": "4-2-3-1",
+      "startXI": [
+        {"player": {"id": 1, "name": "A. Onana", "number": 24, "pos": "G", "grid": "1:1"}},
+        {"player": {"id": 2, "name": "N. Mazraoui", "number": 3, "pos": "D", "grid": "2:1"}}
+      ],
+      "coach": {"id": 901, "name": "R. Amorim"}
+    },
+    {
+      "team": {"id": 40, "name": "Liverpool"},
+      "formation": "4-3-3",
+      "startXI": [
+        {"player": {"id": 10, "name": "A. Becker", "number": 1, "pos": "G", "grid": "1:1"}},
+        {"player": {"id": 11, "name": "T. Alexander-Arnold", "number": 66, "pos": "D", "grid": "2:1"}}
+      ],
+      "coach": {"id": 902, "name": "A. Slot"}
+    }
+  ]
+}

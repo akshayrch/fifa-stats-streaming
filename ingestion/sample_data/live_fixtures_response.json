@@ -1,0 +1,24 @@
+{
+  "get": "fixtures",
+  "parameters": {"live": "all"},
+  "errors": [],
+  "results": 1,
+  "response": [
+    {
+      "fixture": {
+        "id": 1003,
+        "referee": "C. Pawson",
+        "timezone": "UTC",
+        "date": "2026-06-13T15:00:00+00:00",
+        "timestamp": 1781363200,
+        "status": {"long": "Second Half", "short": "2H", "elapsed": 63}
+      },
+      "league": {"id": 39, "name": "Premier League", "country": "England", "season": 2025, "round": "Regular Season - 38"},
+      "teams": {
+        "home": {"id": 49, "name": "Chelsea", "winner": null},
+        "away": {"id": 47, "name": "Tottenham", "winner": null}
+      },
+      "goals": {"home": 1, "away": 1}
+    }
+  ]
+}
