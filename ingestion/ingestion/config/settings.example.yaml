@@ -1,0 +1,30 @@
+# Copy this file to settings.yaml (gitignored) and fill in your credentials.
+
+api_football:
+  base_url: "https://api-football-v1.p.rapidapi.com/v3"
+  rapidapi_key: "YOUR_RAPIDAPI_KEY_HERE"
+  rapidapi_host: "api-football-v1.p.rapidapi.com"
+  # Free tier: 100 requests/day, ~10/min. See docs/data_sources.md for budget strategy.
+  daily_request_budget: 100
+  # When true, producers read canned responses from ingestion/sample_data/
+  # instead of calling the real API. Use this to develop/test the Kafka
+  # pipeline without spending your daily request budget.
+  mock: true
+
+kafka:
+  bootstrap_servers: "localhost:9092"
+
+# Leagues to track (API-Football league IDs). Examples:
+#   39  = Premier League
+#   2   = UEFA Champions League
+#   1   = World Cup
+tracked_leagues:
+  - league_id: 39
+    season: 2025
+
+producers:
+  fixtures_poll_interval_seconds: 1800     # 30 min
+  standings_poll_interval_seconds: 21600   # 6 hours
+  lineups_poll_interval_seconds: 900       # 15 min (only near kickoff)
+  lineups_lookahead_minutes: 60            # only fetch lineups for fixtures kicking off within this window
+  live_events_poll_interval_seconds: 60    # 1 min while a tracked match is live
