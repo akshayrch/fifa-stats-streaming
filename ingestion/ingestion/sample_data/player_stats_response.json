@@ -1,0 +1,40 @@
+{
+  "get": "fixtures/players",
+  "parameters": {"fixture": "1003"},
+  "errors": [],
+  "results": 2,
+  "response": [
+    {
+      "team": {"id": 49, "name": "Chelsea"},
+      "players": [
+        {
+          "player": {"id": 5001, "name": "C. Palmer"},
+          "statistics": [
+            {
+              "games": {"minutes": 63, "position": "F", "rating": "8.1"},
+              "goals": {"total": 1, "assists": 0},
+              "shots": {"total": 3, "on": 2},
+              "passes": {"total": 28, "accuracy": 24}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "team": {"id": 47, "name": "Tottenham"},
+      "players": [
+        {
+          "player": {"id": 6001, "name": "S. Son"},
+          "statistics": [
+            {
+              "games": {"minutes": 63, "position": "F", "rating": "7.8"},
+              "goals": {"total": 1, "assists": 0},
+              "shots": {"total": 2, "on": 1},
+              "passes": {"total": 19, "accuracy": 16}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

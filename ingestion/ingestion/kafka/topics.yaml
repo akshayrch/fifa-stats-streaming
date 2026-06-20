@@ -1,0 +1,31 @@
+# Machine-readable topic definitions, used by create_topics.sh
+topics:
+  - name: football.fixtures.raw
+    partitions: 3
+    replication_factor: 1
+    config:
+      retention.ms: 604800000   # 7 days
+
+  - name: football.events.live
+    partitions: 6
+    replication_factor: 1
+    config:
+      retention.ms: 604800000   # 7 days
+
+  - name: football.lineups.raw
+    partitions: 3
+    replication_factor: 1
+    config:
+      retention.ms: 604800000   # 7 days
+
+  - name: football.standings.raw
+    partitions: 3
+    replication_factor: 1
+    config:
+      retention.ms: 2592000000  # 30 days
+
+  - name: football.player_stats.raw
+    partitions: 6
+    replication_factor: 1
+    config:
+      retention.ms: 604800000   # 7 days
