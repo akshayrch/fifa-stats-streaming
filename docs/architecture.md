@@ -41,6 +41,16 @@ flowchart TB
         A3[Live Tournament Predictor]
     end
 
+    subgraph Serving [Serving]
+        CLI[CLI entrypoints]
+        UI[Streamlit app]
+    end
+
+    subgraph Ops [Orchestration + Observability]
+        AF[Airflow: medallion_pipeline @daily,\nmatch_odds_model_retrain @weekly]
+        DQ[data_quality.py -> JSON report\n+ Slack alert hook]
+    end
+
     API --> P1 & P2 & P3 & P4
     P1 --> T1
     P2 --> T2
@@ -53,7 +63,12 @@ flowchart TB
     SV --> SS3 --> GD
 
     GD --> A1 & A2 & A3
-    T2 -.real-time trigger.-> A3
+    T1 -.FT trigger.-> A3
+    A1 & A2 & A3 --> CLI & UI
+
+    AF -.schedules.-> P1 & SS1 & SS2 & SS3 & DQ
+    SS3 -.gate.-> DQ
+    DQ -.report.-> UI
 ```
 
 ## Layer-by-layer
@@ -94,13 +109,37 @@ for real S3/ADLS in a cloud deployment. Table contracts documented in
 
 ### 4. Serving / Apps
 
-- **App 1 — Squad Optimizer**: batch-scored from Gold (`player_season_stats`,
-  `team_form_features`) + a constraint solver (formation, budget).
-- **App 2 — Match Odds Predictor**: classification model trained on Gold
-  features (`match_prediction_features`), served via a small API/notebook.
-- **App 3 — Live Tournament Predictor**: consumes `football.events.live`
-  directly (in addition to Gold features) to re-run a Monte Carlo tournament
-  simulation whenever a tracked match result changes.
+- **App 2 — Match Odds Predictor**: calibrated classifier trained on Gold
+  features (`elo_diff`, rolling form), CLI (`ml/match_odds/src/predict.py`)
+  and a Streamlit page on top of the same `get_match_probabilities()` core.
+- **App 1 — Squad Optimizer**: a constraint solver (PuLP, formation/budget)
+  picks the best XI from a scored player pool, then reuses App 2's
+  win-probability function to compare it against a naive baseline lineup.
+- **App 3 — Live Tournament Predictor**: Monte Carlo simulation built on App
+  2's model. `live_consumer.py` watches `football.fixtures.raw` (the only
+  topic carrying match status) for a tracked fixture's transition into `FT`
+  and re-triggers the simulation on that event; the Streamlit page exposes
+  the same record-result-and-resimulate path via a form, for demoing the
+  live-trigger effect without a running Kafka consumer.
+
+All three are also reachable through **`app/streamlit_app.py`** — one
+process, four pages (the 3 apps + Pipeline Health), sharing a cached Spark
+session and loaded model across pages. See [`docs/RUNBOOK.md`](RUNBOOK.md).
+
+### 5. Orchestration + observability (Phase 7)
+
+Two Airflow DAGs (`orchestration/dags/`) turn the manual CLI sequence above
+into scheduled runs: `medallion_pipeline` (@daily: ingest -> Bronze -> Silver
+-> Gold -> `data_quality` as a quality gate) and `match_odds_model_retrain`
+(@weekly: re-train + re-backtest App 2's model). Each task is a
+`BashOperator` shelling out to the same script/module a developer would run
+by hand — no pipeline logic lives in the DAGs themselves. See
+[`orchestration/README.md`](../orchestration/README.md).
+
+`data_quality.py`'s checks (row counts, null rates, freshness) write a JSON
+snapshot per run, which the Streamlit "Pipeline Health" page renders without
+needing its own Spark session, plus an optional Slack-webhook alert on any
+failure.
 
 ## Why Spark Structured Streaming over Flink
 

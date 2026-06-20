@@ -3,20 +3,29 @@
 A hands-on, end-to-end data engineering project: ingest live football data from a
 public API via **Kafka**, process it in real time with **Spark Structured
 Streaming**, land it in a **Medallion (Bronze/Silver/Gold) lakehouse**, and serve
-three AI-powered apps on top of it.
+three AI-powered apps on top of it — via CLI, a **Streamlit** web UI, and
+scheduled **Airflow** orchestration.
 
 This repo doubles as a public build-log: weekly LinkedIn updates + Medium
 write-ups track progress phase by phase.
+
+**New here?** [`docs/RUNBOOK.md`](docs/RUNBOOK.md) is the single guide to
+setting everything up and running every phase end to end.
 
 ## The three apps
 
 | # | App | What it does |
 |---|---|---|
 | 1 | **Squad Optimizer** | Given a player pool/budget and formation constraints, recommends a starting XI that maximizes predicted win probability for an upcoming match. |
-| 2 | **Match Odds Predictor** | Pick two teams -> get win/draw/loss probabilities based on historical form, head-to-head, ELO ratings, and player-level stats. |
-| 3 | **Live Tournament Predictor** | Real-time tournament outcome simulation (e.g. group-stage qualification odds, knockout bracket win probabilities) that updates as live results stream in. |
+| 2 | **Match Odds Predictor** | Pick two teams -> get win/draw/loss probabilities based on historical form, head-to-head, and ELO ratings. |
+| 3 | **Live Tournament Predictor** | Monte Carlo tournament outcome simulation (group-stage qualification odds, knockout bracket win probabilities) that re-runs when a tracked live result comes in. |
 
-See [`docs/apps/`](docs/apps/) for the design of each.
+See [`docs/apps/`](docs/apps/) for the design of each, and each app's own
+`README.md` under `ml/<app>/` for what was actually built (including the
+synthetic-data bridges used until enough real fixtures accumulate).
+
+All three are usable from the CLI or from a shared **Streamlit app**
+(`app/streamlit_app.py`) — see [Running it](#running-it) below.
 
 ## Architecture
 
@@ -44,6 +53,13 @@ flowchart LR
         GD --> A1[App 1: Squad Optimizer]
         GD --> A2[App 2: Match Odds Predictor]
         GD --> A3[App 3: Live Tournament Predictor]
+        A1 & A2 & A3 --> UI[Streamlit app]
+    end
+
+    subgraph Ops [Orchestration + Observability]
+        AF[Airflow DAGs] -.schedules.-> SS
+        SS -.quality gate.-> DQ[data_quality.py]
+        DQ -.report.-> UI
     end
 ```
 
@@ -53,47 +69,75 @@ Full write-up: [`docs/architecture.md`](docs/architecture.md)
 
 ```
 fifa-stats-streaming/
-├── docs/                # Architecture, roadmap, data source notes, app specs
+├── docs/                # Architecture, roadmap, runbook, data source notes, app specs
 ├── infra/               # Local dev stack (Kafka, MinIO, etc.) via docker-compose
-├── ingestion/           # Kafka topic config + Python producers (API-Football)
-├── streaming/           # Spark Structured Streaming jobs (bronze -> silver -> gold)
-├── medallion/           # Lakehouse table schemas/contracts per layer
-├── ml/                  # Feature engineering + models for the 3 apps
-└── notebooks/           # Exploration / EDA notebooks
+├── ingestion/            # Kafka topic config + Python producers (API-Football)
+├── streaming/            # Spark Structured Streaming jobs (bronze -> silver -> gold) + data quality
+├── medallion/             # Lakehouse table schemas/contracts per layer
+├── ml/                    # Feature engineering + models for the 3 apps
+├── app/                   # Streamlit web UI over all 3 apps + Pipeline Health
+├── orchestration/         # Airflow DAGs (medallion pipeline, model retraining)
+└── notebooks/             # Exploration / EDA notebooks
 ```
 
 ## Tech stack
 
-- **Ingestion**: Python, `kafka-python` / `confluent-kafka`, API-Football (RapidAPI)
+- **Ingestion**: Python, `confluent-kafka`, API-Football (RapidAPI), with a
+  `mock` mode for developing without spending the free-tier daily budget
 - **Streaming**: Apache Kafka (KRaft mode), Spark Structured Streaming
-- **Storage**: Delta Lake / Apache Iceberg on MinIO (S3-compatible) for local dev
-- **ML**: scikit-learn / XGBoost for odds & feature models, PuLP/OR-Tools for squad
-  optimization, Monte Carlo simulation for tournament predictions
-- **Orchestration (later phase)**: Airflow for batch jobs (gold aggregates, model
-  retraining)
+- **Storage**: Delta Lake on MinIO (S3-compatible) for local dev, or a plain
+  local filesystem path (no Docker/MinIO needed)
+- **ML**: scikit-learn (calibrated GBM vs. ELO-only baseline, walk-forward
+  backtested) for match odds, PuLP for squad optimization, Monte Carlo
+  simulation for tournament predictions
+- **Serving**: CLI entrypoints + a Streamlit app sharing a cached Spark
+  session and model across pages
+- **Orchestration**: Airflow (`medallion_pipeline` @daily,
+  `match_odds_model_retrain` @weekly), in its own venv from the Spark/ML
+  stack — DAG tasks just shell out to the same scripts you'd run by hand
+- **Observability**: `data_quality.py`'s 52 checks (row counts, null rates,
+  freshness) across Bronze/Silver/Gold, with a JSON report + Slack-webhook
+  alert hook
 
 ## Roadmap
 
-See [`docs/roadmap.md`](docs/roadmap.md) for the phased build plan (ingestion ->
-streaming -> medallion -> 3 apps -> write-ups).
+See [`docs/roadmap.md`](docs/roadmap.md) for the phased build plan. All 7
+phases are complete: ingestion -> streaming -> medallion -> 3 apps ->
+orchestration/observability/UI. See [`docs/progress.md`](docs/progress.md)
+for the detailed build log and [`docs/retrospective.md`](docs/retrospective.md)
+for what worked and what's next.
 
-## Getting started
+## Running it
+
+Full instructions (including environment setup): [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
+Quickest path to a working demo:
 
 ```bash
-# 1. Start local infra (Kafka + MinIO)
-cd infra && docker compose up -d
+# 1. Local infra
+bash infra/run_local_kafka.sh   # or: cd infra && docker compose up -d
+cd ingestion/kafka && ./create_topics.sh --no-docker && cd ../..
 
-# 2. Create Kafka topics
-cd ingestion/kafka && ./create_topics.sh
+# 2. Env vars + a clean lakehouse
+export PYTHONPATH=$PWD
+export LAKEHOUSE_BASE_PATH="file:///tmp/fifa-lakehouse"
+export KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
+cp ingestion/config/settings.example.yaml ingestion/config/settings.yaml  # mock: true by default
 
-# 3. Configure API-Football credentials
-cp ingestion/config/settings.example.yaml ingestion/config/settings.yaml
-# edit settings.yaml with your RAPIDAPI_KEY (free tier: https://www.api-football.com/)
+# 3. Run the pipeline once (mock data)
+for p in fixtures standings live_events lineups; do
+  python -m ingestion.producers.${p}_producer --once
+done
+python streaming/jobs/bronze_ingest.py
+python streaming/jobs/silver_transform.py
+python streaming/jobs/gold_aggregate.py
+python streaming/jobs/data_quality.py
 
-# 4. Run a producer
-python -m ingestion.producers.fixtures_producer
+# 4. Train App 2's model, then explore everything in the browser
+python -m ml.match_odds.src.train
+streamlit run app/streamlit_app.py   # http://localhost:8501
 ```
 
 ## Status
 
-🚧 Phase 0 — repo scaffold. See [`docs/roadmap.md`](docs/roadmap.md) for what's next.
+✅ All 7 phases complete (ingestion, streaming, medallion, 3 apps,
+orchestration/observability/UI). See [`docs/roadmap.md`](docs/roadmap.md).

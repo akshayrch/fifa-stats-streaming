@@ -18,6 +18,10 @@ spark-warehouse/
 checkpoints/
 data/
 
+# ML model artifacts
+*.joblib
+*.pkl
+
 # Jupyter
 .ipynb_checkpoints/
 

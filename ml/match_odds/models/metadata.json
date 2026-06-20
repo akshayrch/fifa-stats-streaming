@@ -1,0 +1,20 @@
+{
+  "trained_at": "2026-06-17T01:41:47.352104+00:00",
+  "feature_columns": [
+    "elo_diff",
+    "home_ppg_last5",
+    "away_ppg_last5",
+    "home_avg_gf_last5",
+    "away_avg_gf_last5"
+  ],
+  "label_col": "result",
+  "training_rows": 2280,
+  "training_seasons": 6,
+  "data_source": "synthetic (ml/match_odds/src/synthetic_data.py)",
+  "model_selected": "elo_only_baseline",
+  "backtest_avg_log_loss": {
+    "elo_only_baseline": 0.898,
+    "calibrated_gbm": 0.9581
+  },
+  "backtest_avg_accuracy": 0.6105
+}
